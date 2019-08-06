@@ -1,0 +1,14 @@
+[package]
+name = "tidwall_geohash"
+version = "0.9.1"
+authors = ["tidwall <joshbaker77@gmail.com>"]
+edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/tidwall/geohash-rs"
+documentation = "https://docs.rs/tidwall_geohash/"
+description = "Geohash library"
+
+[dependencies]
+rand = "0.7"
+
