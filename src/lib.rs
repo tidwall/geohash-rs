@@ -135,12 +135,13 @@ pub fn bounding_box_int_with_precision(hash: u64, bits: usize) -> Box {
     let lat = decode_range!(lat_int, 90.0);
     let lng = decode_range!(lng_int, 180.0);
     let (lat_err, lng_err) = error_with_precision(bits);
-    Box {
+    let b = Box {
         min_lat: lat,
         max_lat: lat + lat_err,
         min_lng: lng,
         max_lng: lng + lng_err,
-    }
+    };
+    b
 }
 
 /// bounding_box_int returns the region encoded by the given 64-bit integer
