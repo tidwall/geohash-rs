@@ -11,4 +11,3 @@ description = "Geohash library"
 
 [dependencies]
 rand = "0.7"
-

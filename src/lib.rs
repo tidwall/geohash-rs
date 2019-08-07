@@ -3,6 +3,13 @@ pub mod base32;
 /// Crate geohash provides encoding and decoding of string and integer
 /// geohashes.
 
+/// encode_range the position of x within the range -r to +r as a 32-bit integer.
+macro_rules! encode_range {
+    ($x:expr, $r:expr) => {
+        ((($x + $r) / (2.0 * $r)) * EXP_232) as u32
+    }
+}
+
 /// Direction represents directions in the latitute/longitude space.
 pub type Direction = usize;
 
@@ -33,8 +40,8 @@ pub fn encode_with_precision(lat: f64, lng: f64, chars: usize) -> String {
 
 /// encode_int encodes the point (lat, lng) to a 64-bit integer geohash.
 pub fn encode_int(lat: f64, lng: f64) -> u64 {
-    let lat_int = encode_range(lat, 90.0);
-    let lng_int = encode_range(lng, 180.0);
+    let lat_int = encode_range!(lat, 90.0);
+    let lng_int = encode_range!(lng, 180.0);
     interleave(lat_int, lng_int)
 }
 
@@ -43,6 +50,16 @@ pub fn encode_int(lat: f64, lng: f64) -> u64 {
 pub fn encode_int_with_precision(lat: f64, lng: f64, bits: usize) -> u64 {
     let hash = encode_int(lat, lng);
     hash >> (64 - bits)
+}
+
+/// max_decimal_power returns the minimum number of decimal places such that
+/// there must exist an number with that many places within any range of width
+/// r. This is intended for returning minimal precision coordinates inside a
+/// box.
+macro_rules! max_decimal_power {
+    ($x:expr) => {
+        10f64.powf($x.log10().floor())
+    }
 }
 
 /// Box represents a rectangle in latitude/longitude space.
@@ -71,24 +88,18 @@ impl Box {
     /// round returns a point inside the box, making an effort to round to minimal
     /// precision.
     pub fn round(&self) -> (f64, f64) {
-        let x = max_decimal_power(self.max_lat - self.min_lat);
+        let x = max_decimal_power!(self.max_lat - self.min_lat);
         let lat = (self.min_lat / x).ceil() * x;
-        let x = max_decimal_power(self.max_lng - self.min_lng);
+        let x = max_decimal_power!(self.max_lng - self.min_lng);
         let lng = (self.min_lng / x).ceil() * x;
         (lat, lng)
     }
 }
 
-/// max_decimal_power returns the minimum number of decimal places such that
-/// there must exist an number with that many places within any range of width
-/// r. This is intended for returning minimal precision coordinates inside a
-/// box.
-fn max_decimal_power(r: f64) -> f64 {
-    10f64.powf(r.log10().floor())
-}
-
-fn ldexp(x: f64, exp: i32) -> f64 {
-    x * 2.0f64.powi(exp)
+macro_rules! ldexp {
+    ($x:expr, $exp:expr) => {
+        $x * 2.0f64.powi($exp)
+    }
 }
 
 /// error_with_precision returns the error range in latitude and longitude for in
@@ -97,9 +108,16 @@ pub fn error_with_precision(bits: usize) -> (f64, f64) {
     let b = bits as i32;
     let lat_bits = b / 2;
     let lng_bits = b - lat_bits;
-    let lat_err = ldexp(180.0, -lat_bits);
-    let lng_err = ldexp(360.0, -lng_bits);
+    let lat_err = ldexp!(180.0, -lat_bits);
+    let lng_err = ldexp!(360.0, -lng_bits);
     (lat_err, lng_err)
+}
+
+/// decode_range the 32-bit range encoding X back to a value in the range -r to +r.
+macro_rules! decode_range {
+    ($x:expr, $r:expr) => {
+        2.0 * $r * ($x as f64 / EXP_232) - $r
+    }
 }
 
 /// bounding_box returns the region encoded by the given string geohash.
@@ -114,16 +132,15 @@ pub fn bounding_box(hash: &str) -> Box {
 pub fn bounding_box_int_with_precision(hash: u64, bits: usize) -> Box {
     let full_hash = hash << (64 - bits);
     let (lat_int, lng_int) = deinterleave(full_hash);
-    let lat = decode_range(lat_int, 90.0);
-    let lng = decode_range(lng_int, 180.0);
+    let lat = decode_range!(lat_int, 90.0);
+    let lng = decode_range!(lng_int, 180.0);
     let (lat_err, lng_err) = error_with_precision(bits);
-    let b = Box {
+    Box {
         min_lat: lat,
         max_lat: lat + lat_err,
         min_lng: lng,
         max_lng: lng + lng_err,
-    };
-    b
+    }
 }
 
 /// bounding_box_int returns the region encoded by the given 64-bit integer
@@ -253,19 +270,6 @@ pub fn neighbor_int_with_precision(hash: u64, bits: usize, direction: Direction)
 
 /// precalculated for performance
 const EXP_232: f64 = 4.294967296e+09; // math.Exp2(32)
-
-/// encode_range the position of x within the range -r to +r as a 32-bit integer.
-fn encode_range(x: f64, r: f64) -> u32 {
-    let p = (x + r) / (2.0 * r);
-    (p * EXP_232) as u32
-}
-
-/// decode_range the 32-bit range encoding X back to a value in the range -r to +r.
-fn decode_range(x: u32, r: f64) -> f64 {
-    let p = x as f64 / EXP_232;
-    let x = 2.0 * r * p - r;
-    x
-}
 
 /// spread out the 32 bits of x into 64 bits, where the bits of x occupy even
 /// bit positions.
