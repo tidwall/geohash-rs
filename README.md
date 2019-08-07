@@ -5,7 +5,6 @@ and decoding for string and integer geohashes.
 
 [![travis](https://img.shields.io/travis/tidwall/geohash-rs.svg)](https://travis-ci.org/tidwall/geohash-rs/)
 [![license](https://img.shields.io/crates/l/tidwall_geohash.svg)](LICENSE)
-[![crates.io](https://img.shields.io/crates/d/tidwall_geohash.svg)](https://crates.io/crates/tidwall_geohash)
 [![version](https://img.shields.io/crates/v/tidwall_geohash.svg)](https://crates.io/crates/tidwall_geohash/)
 [![documentation](https://docs.rs/tidwall_geohash/badge.svg)](https://docs.rs/tidwall_geohash/)
 
